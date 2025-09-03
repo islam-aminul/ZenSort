@@ -1,0 +1,6 @@
+#duckdb
+pillow
+mutagen
+pyacoustid
+musicbrainzngs
+requests
