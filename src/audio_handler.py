@@ -1,6 +1,9 @@
 import re
 from pathlib import Path
 from mutagen import File
+import logging
+
+logger = logging.getLogger('ZenSort')
 
 
 class AudioHandler:
@@ -91,5 +94,5 @@ class AudioHandler:
             return metadata
             
         except Exception as e:
-            print(f"Error extracting audio metadata from {file_path}: {e}")
+            logger.error(f"Error extracting audio metadata from {file_path}: {e}")
             return {}

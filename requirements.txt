@@ -1,6 +1,14 @@
-#duckdb
+# Core dependencies
 pillow
+requests
+
+# Optional music enhancement
 mutagen
 pyacoustid
 musicbrainzngs
-requests
+
+# Optional HEIC support (Windows ARM64 may have build issues)
+# pillow-heif
+
+# Optional database (using SQLite by default)
+# duckdb

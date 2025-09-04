@@ -1,5 +1,8 @@
 import shutil
 from pathlib import Path
+import logging
+
+logger = logging.getLogger('ZenSort')
 
 
 class FileCopy:
@@ -32,5 +35,5 @@ class FileCopy:
                 counter += 1
                 
         except Exception as e:
-            print(f"Error copying file: {e}")
+            logger.error(f"Error copying file from {src_path} to {dest_path}: {e}")
             return None

@@ -20,10 +20,15 @@ class ConfigManager:
                     user_config = json.load(f)
                 return self._merge_configs(DEFAULT_CONFIG, user_config)
             else:
-                return DEFAULT_CONFIG.copy()
+                # Save default config to file first
+                default_config = DEFAULT_CONFIG.copy()
+                self.save_config(default_config)
+                return default_config
         except (json.JSONDecodeError, IOError) as e:
-            print(f"Error loading config: {e}. Using defaults.")
-            return DEFAULT_CONFIG.copy()
+            print(f"Error loading config: {e}. Creating default config.")
+            default_config = DEFAULT_CONFIG.copy()
+            self.save_config(default_config)
+            return default_config
     
     def save_config(self, config):
         """Save config to file."""

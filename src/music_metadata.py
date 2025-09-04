@@ -1,4 +1,8 @@
 import time
+import logging
+
+logger = logging.getLogger('ZenSort')
+
 try:
     import acoustid
     import musicbrainzngs
@@ -6,7 +10,7 @@ try:
     from mutagen import File
     DEPENDENCIES_AVAILABLE = True
 except ImportError as e:
-    print(f"Optional music dependencies not available: {e}")
+    logger.warning(f"Optional music dependencies not available: {e}")
     DEPENDENCIES_AVAILABLE = False
 
 
@@ -48,7 +52,7 @@ class MusicMetadataEnhancer:
             return False
             
         except Exception as e:
-            print(f"Error enhancing metadata for {file_path}: {e}")
+            logger.error(f"Error enhancing metadata for {file_path}: {e}")
             return False
     
     def _get_fingerprint(self, file_path):
@@ -57,7 +61,7 @@ class MusicMetadataEnhancer:
             duration, fingerprint = acoustid.fingerprint_file(str(file_path))
             return {'duration': duration, 'fingerprint': fingerprint}
         except Exception as e:
-            print(f"Error generating fingerprint: {e}")
+            logger.error(f"Error generating fingerprint: {e}")
             return None
     
     def _search_by_fingerprint(self, fingerprint_data):
@@ -82,7 +86,7 @@ class MusicMetadataEnhancer:
                 if attempt < self.retry_attempts - 1:
                     time.sleep(self.config.get('retry_delay_base', 2) ** attempt)
                 else:
-                    print(f"MusicBrainz search failed: {e}")
+                    logger.error(f"MusicBrainz search failed: {e}")
         
         return None
     
@@ -140,7 +144,7 @@ class MusicMetadataEnhancer:
             return True
             
         except Exception as e:
-            print(f"Error updating tags: {e}")
+            logger.error(f"Error updating tags: {e}")
             return False
     
     def _rate_limit(self):

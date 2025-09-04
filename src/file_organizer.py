@@ -1,5 +1,9 @@
 import hashlib
 import os
+from pathlib import Path
+import logging
+
+logger = logging.getLogger('ZenSort')
 try:
     from .file_detector import FileDetector
     from .file_skipper import FileSkipper
@@ -7,6 +11,7 @@ try:
     from .video_organizer import VideoOrganizer
     from .audio_organizer import AudioOrganizer
     from .document_organizer import DocumentOrganizer
+    from .file_copy import FileCopy
 except ImportError:
     from file_detector import FileDetector
     from file_skipper import FileSkipper
@@ -14,6 +19,7 @@ except ImportError:
     from video_organizer import VideoOrganizer
     from audio_organizer import AudioOrganizer
     from document_organizer import DocumentOrganizer
+    from file_copy import FileCopy
 
 
 class FileOrganizer:
@@ -79,7 +85,7 @@ class FileOrganizer:
                     hash_sha256.update(chunk)
             return hash_sha256.hexdigest()
         except Exception as e:
-            print(f"Error generating hash for {file_path}: {e}")
+            logger.error(f"Error generating hash for {file_path}: {e}")
             return None
     
     def _route_file(self, file_path, file_type, base_dir):

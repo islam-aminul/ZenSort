@@ -1,6 +1,9 @@
 import re
 from pathlib import Path
 from PIL import Image
+import logging
+
+logger = logging.getLogger('ZenSort')
 try:
     from .image_metadata import ImageMetadata
     from .file_copy import FileCopy
@@ -83,8 +86,7 @@ class ImageOrganizer:
     
     def _is_social_media_image(self, filename):
         """Check if image is from social media."""
-        path = Path(filename)
-        extension = path.suffix.lower().lstrip('.')
+        extension = Path(filename).suffix.lower().lstrip('.')
         for pattern, rule_ext in self.social_media_rules:
             if rule_ext == extension and pattern.search(filename):
                 return True
@@ -210,5 +212,5 @@ class ImageOrganizer:
             return str(export_path) if success else None
             
         except Exception as e:
-            print(f"Error creating export: {e}")
+            logger.error(f"Error creating export: {e}")
             return None

@@ -1,5 +1,9 @@
 from PIL import Image
 from datetime import datetime
+import logging
+
+# HEIC files are handled without external libraries
+logger = logging.getLogger('ZenSort')
 
 
 class ImageMetadata:
@@ -13,8 +17,12 @@ class ImageMetadata:
     def process_image(self, image_path):
         """Process image and return metadata with loaded image."""
         try:
+            # HEIC files cannot be opened by PIL without external libraries
+            if str(image_path).lower().endswith(('.heic', '.heif')):
+                return {'datetime': None, 'make': None, 'model': None, 'software': '', 'is_edited': False, 'year': '0000'}, None, None
+            
             img = Image.open(image_path)
-            exif = img.getexif()
+            exif = img.getexif() or {}
             
             # Extract metadata
             metadata = {
@@ -26,7 +34,7 @@ class ImageMetadata:
                 'year': '0000'
             }
             
-            if exif:
+            if exif and len(exif) > 0:
                 # Get datetime with fallback
                 dt_str = exif.get(36867) or exif.get(306)  # DateTimeOriginal or DateTime
                 if dt_str:
@@ -49,10 +57,12 @@ class ImageMetadata:
                 if exif.get(36867) and not exif.get(306):
                     exif[306] = exif[36867]
             
+
+            
             return metadata, img, exif
             
         except Exception as e:
-            print(f"Error processing image {image_path}: {e}")
+            logger.error(f"Error processing image {image_path}: {e}")
             return {}, None, None
     
     def _parse_datetime(self, dt_str):
@@ -77,5 +87,5 @@ class ImageMetadata:
                 image.save(output_path, 'JPEG', quality=quality, optimize=True)
             return True
         except Exception as e:
-            print(f"Error saving image: {e}")
+            logger.error(f"Error saving image: {e}")
             return False

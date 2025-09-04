@@ -155,7 +155,7 @@ DEFAULT_CONFIG = {
         "retry_attempts": 3,
         "retry_delay_base": 2,
         "use_acoustid": True,
-        "acoustid_api_key": "",
+        "acoustid_api_key": "CyFvbCxTVb",
         "lookup_meta": "recordings+releasegroups+compress",
         "date_format": "year_only",
         "id3_encoding": 3,
