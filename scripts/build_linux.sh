@@ -2,8 +2,7 @@
 echo "Building ZenSort for Linux..."
 
 # Change to script's parent directory
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$(dirname "$0")/.."
 
 # Check if virtual environment exists
 if [ ! -f "venv/bin/activate" ]; then
@@ -22,16 +21,15 @@ mkdir -p build
 echo "Building ZenSort executable..."
 pyinstaller --onefile \
     --name "ZenSort" \
-    --icon="assets/icon.png" \
+    --icon="assets/icon.ico" \
     --add-data "src:src" \
     --hidden-import="PIL._tkinter_finder" \
     --hidden-import="mutagen" \
-    --hidden-import="pyacoustid" \
-    --hidden-import="musicbrainzngs" \
+    --hidden-import="exifread" \
+    --hidden-import="av" \
+    --collect-all="pyacoustid" \
+    --collect-all="musicbrainzngs" \
     --exclude-module="charset_normalizer.md__mypyc" \
     src/main.py
-
-# Make executable executable
-chmod +x dist/ZenSort
 
 echo "Build completed! Executables are in the dist/ folder."

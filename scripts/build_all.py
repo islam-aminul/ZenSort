@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
-"""
-Cross-platform build script for ZenSort
-Builds executables for the current platform
-"""
+"""Cross-platform build script for ZenSort."""
 
 import os
 import sys
-import subprocess
 import platform
+import subprocess
 from pathlib import Path
 
 def run_command(cmd, shell=False):
     """Run command and return success status."""
     try:
-        result = subprocess.run(cmd, shell=shell, check=True, 
-                              capture_output=True, text=True)
+        result = subprocess.run(cmd, shell=shell, check=True, capture_output=True, text=True)
         print(result.stdout)
         return True
     except subprocess.CalledProcessError as e:
@@ -23,73 +19,69 @@ def run_command(cmd, shell=False):
         print(f"Error: {e.stderr}")
         return False
 
-def build_executable(name, script, windowed=False, icon=None):
-    """Build executable using PyInstaller."""
-    cmd = [
-        "pyinstaller", "--onefile",
-        "--name", name,
-        "--add-data", f"src{os.pathsep}src",
-        "--hidden-import", "mutagen",
-        "--hidden-import", "acoustid", 
-        "--hidden-import", "musicbrainzngs",
-        "--hidden-import", "duckdb"
-    ]
+def build_for_platform():
+    """Build ZenSort for current platform."""
+    system = platform.system().lower()
     
-    if windowed:
-        cmd.append("--windowed")
-        cmd.extend(["--hidden-import", "PIL._tkinter_finder"])
+    # Change to project root
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    os.chdir(project_root)
     
-    if icon and Path(icon).exists():
-        cmd.extend(["--icon", icon])
-    
-    if platform.system() == "Darwin":
-        cmd.extend(["--osx-bundle-identifier", "com.zensort.app"])
-    
-    cmd.append(script)
-    
-    print(f"Building {name}...")
-    return run_command(cmd)
-
-def main():
-    """Main build function."""
-    system = platform.system()
     print(f"Building ZenSort for {system}...")
     
-    # Change to script's parent directory
-    script_dir = Path(__file__).parent
-    project_dir = script_dir.parent
-    os.chdir(project_dir)
+    # Check virtual environment
+    if system == 'windows':
+        venv_activate = "venv\\Scripts\\activate.bat"
+        python_cmd = "python"
+    else:
+        venv_activate = "venv/bin/activate"
+        python_cmd = "python3"
     
-    # Create directories
+    if not Path(venv_activate).exists():
+        print("Virtual environment not found. Please run setup script first.")
+        return False
+    
+    # Create build directories
     Path("dist").mkdir(exist_ok=True)
     Path("build").mkdir(exist_ok=True)
     
-    # Determine icon file
-    icon_map = {
-        "Windows": "assets/icon.ico",
-        "Darwin": "assets/icon.icns", 
-        "Linux": "assets/icon.png"
-    }
-    icon = icon_map.get(system)
-    
-    # Build GUI executable
-    gui_success = build_executable("ZenSort", "src/gui.py", windowed=True, icon=icon)
-    
-    # Build CLI executable  
-    cli_success = build_executable("ZenSort-CLI", "src/cli.py", icon=icon)
-    
-    # Set executable permissions on Unix systems
-    if system in ["Linux", "Darwin"]:
-        os.chmod("dist/ZenSort", 0o755)
-        os.chmod("dist/ZenSort-CLI", 0o755)
-    
-    if gui_success and cli_success:
-        print("\nBuild completed successfully!")
-        print("Executables are in the dist/ folder.")
-        return 0
+    # Build command
+    if system == 'windows':
+        icon = "assets/icon.ico"
     else:
-        print("\nBuild failed!")
-        return 1
+        icon = "assets/icon.icns" if system == 'darwin' else "assets/icon.ico"
+    
+    build_cmd = [
+        python_cmd, "-m", "PyInstaller", "--onefile",
+        "--name", "ZenSort",
+        "--icon", icon,
+        "--add-data", "src:src" if system != 'windows' else "src;src",
+        "--hidden-import", "PIL._tkinter_finder",
+        "--hidden-import", "mutagen",
+        "--hidden-import", "exifread", 
+        "--hidden-import", "av",
+        "--collect-all", "pyacoustid",
+        "--collect-all", "musicbrainzngs",
+        "--exclude-module", "charset_normalizer.md__mypyc",
+        "src/main.py"
+    ]
+    
+    # Activate virtual environment and run build
+    if system == 'windows':
+        full_cmd = f'call {venv_activate} && {" ".join(build_cmd)}'
+        success = run_command(full_cmd, shell=True)
+    else:
+        full_cmd = f'source {venv_activate} && {" ".join(build_cmd)}'
+        success = run_command(full_cmd, shell=True)
+    
+    if success:
+        print("Build completed! Executables are in the dist/ folder.")
+    else:
+        print("Build failed!")
+    
+    return success
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = build_for_platform()
+    sys.exit(0 if success else 1)

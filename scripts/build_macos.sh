@@ -2,8 +2,7 @@
 echo "Building ZenSort for macOS..."
 
 # Change to script's parent directory
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$(dirname "$0")/.."
 
 # Check if virtual environment exists
 if [ ! -f "venv/bin/activate" ]; then
@@ -20,16 +19,17 @@ mkdir -p build
 
 # Build unified executable
 echo "Building ZenSort executable..."
-pyinstaller --onefile --windowed \
+pyinstaller --onefile \
     --name "ZenSort" \
     --icon="assets/icon.icns" \
     --add-data "src:src" \
     --hidden-import="PIL._tkinter_finder" \
     --hidden-import="mutagen" \
-    --hidden-import="pyacoustid" \
-    --hidden-import="musicbrainzngs" \
+    --hidden-import="exifread" \
+    --hidden-import="av" \
+    --collect-all="pyacoustid" \
+    --collect-all="musicbrainzngs" \
     --exclude-module="charset_normalizer.md__mypyc" \
-    --osx-bundle-identifier="com.zensort.app" \
     src/main.py
 
 echo "Build completed! Executables are in the dist/ folder."
