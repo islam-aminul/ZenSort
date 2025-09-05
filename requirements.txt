@@ -1,6 +1,7 @@
 # Core dependencies
 pillow
 requests
+charset-normalizer
 exifread
 av
 

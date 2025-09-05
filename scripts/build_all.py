@@ -61,9 +61,8 @@ def build_for_platform():
         "--hidden-import", "mutagen",
         "--hidden-import", "exifread", 
         "--hidden-import", "av",
-        "--collect-all", "pyacoustid",
+        "--hidden-import", "pyacoustid",
         "--collect-all", "musicbrainzngs",
-        "--exclude-module", "charset_normalizer.md__mypyc",
         "src/main.py"
     ]
     

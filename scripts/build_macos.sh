@@ -27,9 +27,8 @@ pyinstaller --onefile \
     --hidden-import="mutagen" \
     --hidden-import="exifread" \
     --hidden-import="av" \
-    --collect-all="pyacoustid" \
+    --hidden-import="pyacoustid" \
     --collect-all="musicbrainzngs" \
-    --exclude-module="charset_normalizer.md__mypyc" \
     src/main.py
 
 echo "Build completed! Executables are in the dist/ folder."
