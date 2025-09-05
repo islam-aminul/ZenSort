@@ -4,6 +4,11 @@ from PIL import Image
 import logging
 
 logger = logging.getLogger('ZenSort')
+
+try:
+    from .ffmpeg_handler import FFmpegHandler
+except ImportError:
+    from ffmpeg_handler import FFmpegHandler
 try:
     from .image_metadata import ImageMetadata
     from .file_copy import FileCopy
@@ -15,6 +20,7 @@ except ImportError:
 class ImageOrganizer:
     def __init__(self, config):
         self.metadata_handler = ImageMetadata(config)
+        self.ffmpeg_handler = FFmpegHandler()
         
         # Cache directory names
         directories = config.get('directories', {})
@@ -121,8 +127,11 @@ class ImageOrganizer:
         result = FileCopy.copy_with_conflict_resolution(file_path, dest_path)
         
         # Create export for originals only
-        if result and self.export_enabled and img and exif is not None:
-            self._create_export(file_path, base_dir, metadata, img, exif)
+        if result and self.export_enabled:
+            if img and exif is not None:
+                self._create_export(file_path, base_dir, metadata, img, exif)
+            elif str(file_path).lower().endswith(('.heic', '.heif')):
+                self._create_heic_export(file_path, base_dir, metadata)
         
         return result
     
@@ -135,9 +144,12 @@ class ImageOrganizer:
         result = FileCopy.copy_with_conflict_resolution(file_path, dest_path)
         
         # Create export for collections only if metadata is available
-        if result and self.export_enabled and img and exif is not None:
-            metadata = {'year': None, 'make': None, 'model': None, 'datetime': None}
-            self._create_export(file_path, base_dir, metadata, img, exif)
+        if result and self.export_enabled:
+            if img and exif is not None:
+                metadata = {'year': None, 'make': None, 'model': None, 'datetime': None}
+                self._create_export(file_path, base_dir, metadata, img, exif)
+            elif str(file_path).lower().endswith(('.heic', '.heif')):
+                self._create_heic_export(file_path, base_dir, {'year': 'NoDate', 'make': None, 'model': None, 'datetime': None})
         
         return result
     
@@ -212,5 +224,43 @@ class ImageOrganizer:
             return str(export_path) if success else None
             
         except Exception as e:
-            logger.error(f"Error creating export: {e}")
+            logger.error(f"Error creating export for {file_path}: {e}")
+            return None
+    
+    def _create_heic_export(self, file_path, base_dir, metadata):
+        """Create JPEG export from HEIC file."""
+        try:
+            # Generate export filename
+            dt = metadata.get('datetime')
+            make = metadata.get('make')
+            model = metadata.get('model')
+            original_name = Path(file_path).stem
+            
+            # Build filename parts
+            filename_parts = []
+            
+            if dt:
+                year = dt.strftime('%Y')
+                date_time = dt.strftime('%Y-%m-%d - %H-%M-%S')
+                filename_parts.append(date_time)
+            else:
+                year = 'NoDate'
+            
+            if make and model:
+                filename_parts.append(f'{make} - {model}')
+            
+            filename_parts.append(original_name)
+            
+            export_filename = ' -- '.join(filename_parts) + '.jpg'
+            export_dir = Path(base_dir) / self.images_dir / self.exports_dir / year
+            export_dir.mkdir(parents=True, exist_ok=True)
+            export_path = export_dir / export_filename
+            
+            # Convert HEIC to JPEG using FFmpeg
+            success = self.ffmpeg_handler.convert_heic_to_jpeg(file_path, export_path, self.quality)
+            
+            return str(export_path) if success else None
+            
+        except Exception as e:
+            logger.error(f"Error creating HEIC export for {file_path}: {e}")
             return None

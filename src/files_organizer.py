@@ -1,6 +1,19 @@
 import os
 import time
 from pathlib import Path
+
+def format_time(seconds):
+    """Format seconds into human readable time string."""
+    if seconds < 60:
+        return f"{int(seconds)}s"
+    elif seconds < 3600:
+        minutes = int(seconds // 60)
+        secs = int(seconds % 60)
+        return f"{minutes}m {secs}s"
+    else:
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        return f"{hours}h {minutes}m"
 try:
     from .logger import ZenSortLogger
 except ImportError:
@@ -205,8 +218,11 @@ class FilesOrganizer:
         else:
             print(f"INFO: {msg}")
         
+        # Initialize timing
+        start_time = time.time()
+        
         if self.progress_callback:
-            self.progress_callback(0, self.stats['total'], self.stats)
+            self.progress_callback(0, self.stats['total'], self.stats, "0s", "0s")
         
         # Process each file
         for i, file_path in enumerate(all_files):
@@ -223,31 +239,43 @@ class FilesOrganizer:
             # Process file
             result = self.processor.process_file(file_path, self.dest_dir)
             
+            # Calculate timing info
+            elapsed_time = time.time() - start_time
+            if i > 0:
+                avg_time_per_file = elapsed_time / (i + 1)
+                remaining_files = self.stats['total'] - (i + 1)
+                eta_seconds = avg_time_per_file * remaining_files
+            else:
+                eta_seconds = 0
+            
             # Log file processing with aligned format
             action = result['status'].upper().ljust(10)
             file_path_str = str(file_path)
+            
+            # Format timing for human readability
+            elapsed_str = format_time(elapsed_time)
+            eta_str = format_time(eta_seconds)
             
             if result['status'] == 'processed':
                 if self.logger:
                     self.logger.info(f"Processed: {file_path} -> {result.get('destination', 'unknown')}")
                 if self.progress_callback:
-                    # Send formatted log to GUI
-                    self.progress_callback(i + 1, self.stats['total'], self.stats, f"{action} {file_path_str}")
+                    self.progress_callback(i + 1, self.stats['total'], self.stats, elapsed_str, eta_str, f"{action} {file_path_str}")
             elif result['status'] == 'skipped':
                 if self.logger:
                     self.logger.info(f"Skipped: {file_path} ({result.get('reason', 'unknown')})")
                 if self.progress_callback:
-                    self.progress_callback(i + 1, self.stats['total'], self.stats, f"{action} {file_path_str}")
+                    self.progress_callback(i + 1, self.stats['total'], self.stats, elapsed_str, eta_str, f"{action} {file_path_str}")
             elif result['status'] == 'duplicate':
                 if self.logger:
                     self.logger.warning(f"Duplicate: {file_path} (original: {result.get('original', 'unknown')})")
                 if self.progress_callback:
-                    self.progress_callback(i + 1, self.stats['total'], self.stats, f"{action} {file_path_str}")
+                    self.progress_callback(i + 1, self.stats['total'], self.stats, elapsed_str, eta_str, f"{action} {file_path_str}")
             else:
                 if self.logger:
                     self.logger.error(f"Error processing {file_path}: {result.get('reason', 'unknown')}")
                 if self.progress_callback:
-                    self.progress_callback(i + 1, self.stats['total'], self.stats, f"{action} {file_path_str}")
+                    self.progress_callback(i + 1, self.stats['total'], self.stats, elapsed_str, eta_str, f"{action} {file_path_str}")
             
             # Update statistics
             if result['status'] == 'processed':
@@ -279,7 +307,13 @@ class FilesOrganizer:
             dirs[:] = [d for d in dirs if not self.processor.skipper.should_skip_directory(Path(root) / d)]
             
             for file in files:
-                file_path = Path(root) / file
+                # Sanitize filename to remove null characters
+                clean_file = file.replace('\x00', '')
+                if clean_file != file:
+                    if self.logger:
+                        self.logger.warning(f"Sanitized filename with null characters: {repr(file)}")
+                
+                file_path = Path(root) / clean_file
                 if not self.processor.skipper.should_skip_file(file_path):
                     yield file_path
     

@@ -48,6 +48,7 @@ class FileOrganizer:
             
             # Check if file should be skipped
             if self.skipper.should_skip_file(file_path, file_size):
+                logger.info(f"Skipped: {file_path}")
                 return {'status': 'skipped', 'reason': 'skip_pattern'}
             
             # Generate file hash
@@ -58,6 +59,7 @@ class FileOrganizer:
             # Check for duplicates
             duplicate_path = self.database.check_duplicate(file_hash)
             if duplicate_path:
+                logger.info(f"Duplicate: {file_path} -> {duplicate_path}")
                 return {'status': 'duplicate', 'original': duplicate_path}
             
             # Detect file type
@@ -71,9 +73,11 @@ class FileOrganizer:
                 self.database.add_hash(result_path, file_hash, file_size)
                 return {'status': 'processed', 'type': file_type, 'destination': result_path}
             else:
+                logger.error(f"Organization failed: {file_path}")
                 return {'status': 'error', 'reason': 'organization_failed'}
                 
         except Exception as e:
+            logger.error(f"Processing error: {file_path} - {e}")
             return {'status': 'error', 'reason': str(e)}
     
     def _generate_hash(self, file_path):

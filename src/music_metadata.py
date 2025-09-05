@@ -61,7 +61,7 @@ class MusicMetadataEnhancer:
             duration, fingerprint = acoustid.fingerprint_file(str(file_path))
             return {'duration': duration, 'fingerprint': fingerprint}
         except Exception as e:
-            logger.error(f"Error generating fingerprint: {e}")
+            logger.error(f"Error generating fingerprint for {file_path}: {e}")
             return None
     
     def _search_by_fingerprint(self, fingerprint_data):

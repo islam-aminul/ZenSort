@@ -26,6 +26,8 @@ pyinstaller --onefile ^
     --add-data "src;src" ^
     --hidden-import="PIL._tkinter_finder" ^
     --hidden-import="mutagen" ^
+    --hidden-import="exifread" ^
+    --hidden-import="av" ^
     --collect-all="pyacoustid" ^
     --collect-all="musicbrainzngs" ^
     --exclude-module="charset_normalizer.md__mypyc" ^

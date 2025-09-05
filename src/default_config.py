@@ -59,7 +59,12 @@ DEFAULT_CONFIG = {
         "photoshop",
         "lightroom",
         "gimp",
+        "paint.net",
         "canva",
+        "pixlr",
+        "photo editor",
+        "windows photo",
+        "picasa",
         "pixelmator"
     ],
     
@@ -107,14 +112,15 @@ DEFAULT_CONFIG = {
         {"pattern": r"voice", "extension": "wav"},
         {"pattern": r"recording", "extension": "m4a"},
         {"pattern": r"memo", "extension": "mp3"},
-        {"pattern": r"note", "extension": "m4a"}
+        {"pattern": r"note", "extension": "m4a"},
+        {"pattern": r"SIM\d+_\d{8}_\d+", "extension": "wav"}
     ],
     
     # Social Media Image Detection Rules (pattern-extension pairs)
     "social_media_image_rules": [
         {"pattern": r"IMG-\d{8}-WA\d+", "extension": "jpg"},
         {"pattern": r"IMG-\d{8}-WA\d+", "extension": "jpeg"},
-        {"pattern": r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "extension": "jpg"}
+        {"pattern": r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "extension": "jpg"}
     ],
     
     # Voice Message Detection Rules (pattern-extension pairs)
@@ -141,6 +147,7 @@ DEFAULT_CONFIG = {
         "system_files": [".DS_Store", "Thumbs.db", "desktop.ini"],
         "temp_extensions": [".tmp", ".temp", ".cache", ".log"],
         "ignore_directories": [".git", "__pycache__", "node_modules", ".vscode"],
+        "skip_filename_patterns": [r"null-\d{8}-WA\d+", r"STK-\d{8}-WA\d+"],
         "min_file_size_bytes": 0,
         "max_file_size_gb": 50
     },

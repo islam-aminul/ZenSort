@@ -17,6 +17,10 @@ class FileSkipper:
         
         # Thumbnail patterns
         self.thumb_pattern = re.compile(r'\.thumb\d*$', re.IGNORECASE)
+        
+        # Compile filename skip patterns
+        filename_patterns = skip_config.get('skip_filename_patterns', [])
+        self.filename_patterns = [re.compile(pattern, re.IGNORECASE) for pattern in filename_patterns]
     
     def should_skip_file(self, file_path, file_size=None):
         """Check if file should be skipped. Returns True to skip."""
@@ -48,6 +52,8 @@ class FileSkipper:
         if filename in self.system_files:
             return True
         if self.thumb_pattern.search(filename):
+            return True
+        if any(pattern.search(filename) for pattern in self.filename_patterns):
             return True
         return False
     

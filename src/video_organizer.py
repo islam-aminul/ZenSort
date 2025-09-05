@@ -4,8 +4,10 @@ from datetime import datetime
 import os
 try:
     from .file_copy import FileCopy
+    from .ffmpeg_handler import FFmpegHandler
 except ImportError:
     from file_copy import FileCopy
+    from ffmpeg_handler import FFmpegHandler
 
 
 class VideoOrganizer:
@@ -13,6 +15,9 @@ class VideoOrganizer:
         # Cache directory names
         directories = config.get('directories', {})
         self.videos_dir = directories.get('videos', 'Videos')
+        
+        # Initialize FFmpeg handler for metadata extraction
+        self.ffmpeg_handler = FFmpegHandler()
         
         # Cache subdirectory names
         subdirs = config.get('subdirectories', {}).get('videos', {})
@@ -82,7 +87,10 @@ class VideoOrganizer:
         dest_dir = Path(base_dir) / self.videos_dir / self.motion_photos_dir / year
         dest_dir.mkdir(parents=True, exist_ok=True)
         
-        dest_path = dest_dir / Path(file_path).name
+        # Extract metadata and generate filename
+        metadata = self.ffmpeg_handler.extract_video_metadata(file_path)
+        new_filename = self._generate_video_filename(file_path, metadata)
+        dest_path = dest_dir / new_filename
         return self._copy_file(file_path, dest_path)
     
     def _move_to_short_videos(self, file_path, base_dir, year):
@@ -90,7 +98,10 @@ class VideoOrganizer:
         dest_dir = Path(base_dir) / self.videos_dir / self.short_videos_dir / year
         dest_dir.mkdir(parents=True, exist_ok=True)
         
-        dest_path = dest_dir / Path(file_path).name
+        # Extract metadata and generate filename
+        metadata = self.ffmpeg_handler.extract_video_metadata(file_path)
+        new_filename = self._generate_video_filename(file_path, metadata)
+        dest_path = dest_dir / new_filename
         return self._copy_file(file_path, dest_path)
     
     def _move_to_regular_videos(self, file_path, base_dir, year):
@@ -98,8 +109,50 @@ class VideoOrganizer:
         dest_dir = Path(base_dir) / self.videos_dir / year
         dest_dir.mkdir(parents=True, exist_ok=True)
         
-        dest_path = dest_dir / Path(file_path).name
+        # Extract metadata and generate filename
+        metadata = self.ffmpeg_handler.extract_video_metadata(file_path)
+        new_filename = self._generate_video_filename(file_path, metadata)
+        dest_path = dest_dir / new_filename
         return self._copy_file(file_path, dest_path)
+    
+    def _generate_video_filename(self, file_path, metadata):
+        """Generate video filename with datetime, make, model format."""
+        original_name = Path(file_path).stem
+        extension = Path(file_path).suffix
+        
+        filename_parts = []
+        
+        # Add datetime if available
+        creation_time = metadata.get('creation_time')
+        if creation_time:
+            try:
+                # Parse creation time (usually ISO format)
+                if 'T' in creation_time:
+                    dt = datetime.fromisoformat(creation_time.replace('Z', '+00:00'))
+                else:
+                    dt = datetime.strptime(creation_time, '%Y:%m:%d %H:%M:%S')
+                
+                date_time = dt.strftime('%Y-%m-%d %H-%M-%S')
+                filename_parts.append(date_time)
+            except (ValueError, TypeError):
+                pass
+        
+        # Add make and model if available (from EXIF or metadata)
+        make = metadata.get('make')
+        model = metadata.get('model')
+        if make and model:
+            filename_parts.append(f'{make} - {model}')
+        
+        # Add original filename
+        filename_parts.append(original_name)
+        
+        # Join parts with separator
+        if len(filename_parts) > 1:
+            new_filename = ' -- '.join(filename_parts) + extension
+        else:
+            new_filename = original_name + extension
+        
+        return new_filename
     
     def _copy_file(self, src, dest):
         """Copy file to destination with conflict resolution."""
